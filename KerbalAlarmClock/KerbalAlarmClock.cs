@@ -623,7 +623,31 @@ namespace KerbalAlarmClock
 				UpdateEarthAlarms();
 			}
 		}
+		private Vector3d AscendingNodeVector(Orbit targetOrbit, Orbit originOrbit)
+		{
+			return Vector3d.Cross(targetOrbit.GetOrbitNormal(), originOrbit.GetOrbitNormal());
+		}
 
+		private Vector3d DescendingNodeVector(Orbit targetOrbit, Orbit originOrbit)
+		{
+			return Vector3d.Cross(originOrbit.GetOrbitNormal(), targetOrbit.GetOrbitNormal());
+		}
+
+		private double GetTrueAnomalyFromVector(Orbit orbit, Vector3 vector)
+		{
+			return orbit.GetTrueAnomalyOfZupVector(vector) * Mathf.Rad2Deg;
+		}
+
+		private double GetTimeToTrueAnomaly(Orbit orbit, double trueAnomaly)
+		{
+			var time = orbit.GetDTforTrueAnomaly(trueAnomaly * Mathf.Deg2Rad, orbit.period);
+			return time < 0.0 ? time + orbit.period : time;
+		}
+
+		private double GetTimeToVector(Orbit orbit, Vector3d vector)
+		{
+			return this.GetTimeToTrueAnomaly(orbit, this.GetTrueAnomalyFromVector(orbit, vector));
+		}
 
 		private Boolean drawingTrackStationButtons=false;
 		private DateTime drawingTrackStationButtonsAt = DateTime.Now;
@@ -689,7 +713,9 @@ namespace KerbalAlarmClock
 				{
 					if (KACWorkerGameState.CurrentVessel.orbit.AscendingNodeExists(KACWorkerGameState.CurrentVesselTarget.GetOrbit()))
 					{
-						Double tAN = KACWorkerGameState.CurrentVessel.orbit.TimeOfAscendingNode(KACWorkerGameState.CurrentVesselTarget.GetOrbit(), Planetarium.GetUniversalTime());
+						// Double tAN = KACWorkerGameState.CurrentVessel.orbit.TimeOfAscendingNode(KACWorkerGameState.CurrentVesselTarget.GetOrbit(), Planetarium.GetUniversalTime());
+						Double tAN = this.GetTimeToVector(KACWorkerGameState.CurrentVessel.orbit, this.AscendingNodeVector(KACWorkerGameState.CurrentVesselTarget.GetOrbit(), KACWorkerGameState.CurrentVessel.orbit));
+						tAN += Planetarium.GetUniversalTime();
 						if (tAN < KACWorkerGameState.CurrentVessel.orbit.EndUT)
 						{
 							DrawNodeWarpButton(true, tAN, KACAlarm.AlarmTypeEnum.AscendingNode, "AN",
@@ -700,7 +726,9 @@ namespace KerbalAlarmClock
 					}
 					if (KACWorkerGameState.CurrentVessel.orbit.DescendingNodeExists(KACWorkerGameState.CurrentVesselTarget.GetOrbit()))
 					{
-						Double tDN = KACWorkerGameState.CurrentVessel.orbit.TimeOfDescendingNode(KACWorkerGameState.CurrentVesselTarget.GetOrbit(), Planetarium.GetUniversalTime());
+						// Double tDN = KACWorkerGameState.CurrentVessel.orbit.TimeOfDescendingNode(KACWorkerGameState.CurrentVesselTarget.GetOrbit(), Planetarium.GetUniversalTime());
+						Double tDN = this.GetTimeToVector(KACWorkerGameState.CurrentVessel.orbit, this.DescendingNodeVector(KACWorkerGameState.CurrentVesselTarget.GetOrbit(), KACWorkerGameState.CurrentVessel.orbit));
+						tDN += Planetarium.GetUniversalTime();
 						if (tDN < KACWorkerGameState.CurrentVessel.orbit.EndUT)
 						{
 							DrawNodeWarpButton(true, tDN, KACAlarm.AlarmTypeEnum.DescendingNode, "DN",
